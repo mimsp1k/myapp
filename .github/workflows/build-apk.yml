@@ -34,23 +34,21 @@ jobs:
         sed -i 's|<content src="index.html" />|<content src="https://magenta-halva-f17420.netlify.app/" />|g' config.xml
         sed -i 's|<allow-intent href="http://\*/*" />|<allow-navigation href="*" />|g' config.xml
 
-    - name: Build Unsigned APK
+    - name: Build APK
       run: |
         cd myapp
         cordova build android --release
 
-    - name: Sign APK with apksigner (v2/v3 Schema)
-      run: |
-        cd myapp/platforms/android/app/build/outputs/apk/release
-        keytool -genkey -v -keystore my-release-key.keystore -alias alias_name -keyalg RSA -keysize 2048 -validity 10000 -storepass password123 -keypass password123 -dname "CN=Paramedical, OU=Dev, O=App, L=City, S=State, C=DZ"
-        
-        # تحديد مسار أداة apksigner وتوقيع الملف بمعيار v2/v3
-        BUILD_TOOLS_PATH=$(ls -d $ANDROID_HOME/build-tools/* | tail -n 1)
-        $BUILD_TOOLS_PATH/zipalign -v 4 app-release-unsigned.apk Paramedical-Aligned.apk
-        $BUILD_TOOLS_PATH/apksigner sign --ks my-release-key.keystore --ks-pass pass:password123 --key-pass pass:password123 --out Paramedical-Signed.apk Paramedical-Aligned.apk
+    - name: Sign APK Automatically
+      uses: r-studio/upload-apk-sign-action@v1
+      with:
+        apkPaths: 'myapp/platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk'
+        storePassword: 'password123'
+        keyPassword: 'password123'
+        keyAlias: 'alias_name'
 
     - name: Upload Signed APK
       uses: actions/upload-artifact@v4
       with:
         name: Paramedical-Signed-APK
-        path: myapp/platforms/android/app/build/outputs/apk/release/Paramedical-Signed.apk
+        path: 'myapp/platforms/android/app/build/outputs/apk/release/app-release-unsigned-signed.apk'
