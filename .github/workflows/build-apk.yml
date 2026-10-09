@@ -1,0 +1,38 @@
+name: Build Android APK from URL
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+
+    - name: Install Cordova
+      run: npm install -g cordova
+
+    - name: Create Cordova App
+      run: |
+        cordova create myapp com.app.paramedical2 "Paramedical"
+        cd myapp
+        cordova platform add android
+        # استبدال رابط موقعك وإتاحة التصفح الكامل
+        sed -i 's|<content src="index.html" />|<content src="https://magenta-halva-f17420.netlify.app/" />|g' config.xml
+        sed -i 's|<allow-intent href="http://\*/*" />|<allow-navigation href="*" />|g' config.xml
+
+    - name: Build APK
+      run: |
+        cd myapp
+        cordova build android --debug
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: Paramedical-APK
+        path: myapp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
