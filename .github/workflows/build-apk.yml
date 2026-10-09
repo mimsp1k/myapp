@@ -9,10 +9,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Java JDK
+      uses: actions/setup-java@v4
       with:
-        node-version: 18
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
 
     - name: Install Cordova
       run: npm install -g cordova
@@ -22,7 +31,6 @@ jobs:
         cordova create myapp com.app.paramedical2 "Paramedical"
         cd myapp
         cordova platform add android
-        # استبدال رابط موقعك وإتاحة التصفح الكامل
         sed -i 's|<content src="index.html" />|<content src="https://magenta-halva-f17420.netlify.app/" />|g' config.xml
         sed -i 's|<allow-intent href="http://\*/*" />|<allow-navigation href="*" />|g' config.xml
 
@@ -32,7 +40,7 @@ jobs:
         cordova build android --debug
 
     - name: Upload APK
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Paramedical-APK
         path: myapp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
