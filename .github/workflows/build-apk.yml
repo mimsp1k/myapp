@@ -23,11 +23,8 @@ jobs:
       with:
         node-version: '20'
 
-    - name: Install Cordova & Android Build Tools
-      run: |
-        npm install -g cordova
-        sudo apt-get update
-        sudo apt-get install -y google-android-cmdline-tools-11.0-installer android-sdk
+    - name: Install Cordova
+      run: npm install -g cordova
 
     - name: Create Cordova App
       run: |
@@ -42,11 +39,12 @@ jobs:
         cd myapp
         cordova build android --release
 
-    - name: Generate Key & Sign APK
+    - name: Sign APK with Keytool & jarsigner
       run: |
         cd myapp/platforms/android/app/build/outputs/apk/release
         keytool -genkey -v -keystore my-release-key.keystore -alias alias_name -keyalg RSA -keysize 2048 -validity 10000 -storepass password123 -keypass password123 -dname "CN=Paramedical, OU=Dev, O=App, L=City, S=State, C=DZ"
-        $ANDROID_HOME/build-tools/34.0.0/apksigner sign --ks my-release-key.keystore --ks-pass pass:password123 --key-pass pass:password123 --out Paramedical-Signed.apk app-release-unsigned.apk
+        jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore my-release-key.keystore -storepass password123 app-release-unsigned.apk alias_name
+        mv app-release-unsigned.apk Paramedical-Signed.apk
 
     - name: Upload Signed APK
       uses: actions/upload-artifact@v4
