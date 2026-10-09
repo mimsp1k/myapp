@@ -26,28 +26,40 @@ jobs:
     - name: Install Cordova
       run: npm install -g cordova
 
-    - name: Create Cordova App
+    - name: Create Cordova App & Generate Key
       run: |
         cordova create myapp com.app.paramedical2 "Paramedical"
         cd myapp
         cordova platform add android
         sed -i 's|<content src="index.html" />|<content src="https://magenta-halva-f17420.netlify.app/" />|g' config.xml
         sed -i 's|<allow-intent href="http://\*/*" />|<allow-navigation href="*" />|g' config.xml
+        
+        # إنشاء مفتاح التوقيع داخل المجلد
+        keytool -genkeypair -v -keystore release-key.jks -alias my-alias -keyalg RSA -keysize 2048 -validity 10000 -storepass password123 -keypass password123 -dname "CN=Paramedical, OU=Dev, O=App, L=City, S=State, C=DZ"
+        
+        # إنشاء ملف إعدادات التوقيع الخاص بـ Cordova
+        cat <<EOF > build.json
+        {
+          "android": {
+            "release": {
+              "keystore": "release-key.jks",
+              "storePassword": "password123",
+              "alias": "my-alias",
+              "password": "password123",
+              "keystoreType": "",
+              "packageType": "apk"
+            }
+          }
+        }
+        EOF
 
-    - name: Build Release APK
+    - name: Build Signed Release APK
       run: |
         cd myapp
-        cordova build android --release
-
-    - name: Sign APK
-      run: |
-        cd myapp/platforms/android/app/build/outputs/apk/release
-        keytool -genkeypair -v -keystore my-release-key.keystore -alias alias_name -keyalg RSA -keysize 2048 -validity 10000 -storepass password123 -keypass password123 -dname "CN=Paramedical, OU=Dev, O=App, L=City, S=State, C=DZ"
-        jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore my-release-key.keystore -storepass password123 app-release-unsigned.apk alias_name
-        cp app-release-unsigned.apk Paramedical-Signed.apk
+        cordova build android --release --buildConfig=build.json
 
     - name: Upload Signed APK
       uses: actions/upload-artifact@v4
       with:
         name: Paramedical-Signed-APK
-        path: myapp/platforms/android/app/build/outputs/apk/release/Paramedical-Signed.apk
+        path: myapp/platforms/android/app/build/outputs/apk/release/app-release.apk
